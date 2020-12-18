@@ -1,9 +1,15 @@
+import logging
+logging.basicConfig(level=logging.INFO)
+
+from pathlib import Path
 from itertools import product, cycle
 import pickle
 
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
+
+logger = logging.getLogger(__name__)
 
 
 def extract_grid_images(nx, ny, x_start, lx, y_start, ly, dx, dy, X, plot_debug=False):
@@ -26,7 +32,7 @@ def extract_grid_images(nx, ny, x_start, lx, y_start, ly, dx, dy, X, plot_debug=
     return images
 
 
-def build_reference(images, labels_coord):
+def build_reference_from_images(images, labels_coord):
     reference = {l: images[i,j] for l, (i, j) in labels_coord.items()}
     # normalize
     for v in reference.values():
@@ -35,9 +41,30 @@ def build_reference(images, labels_coord):
     return reference
 
 
-def save_reference(reference, ref_name):
-    with open(ref_name, 'wb') as f:
+REFERENCE_FILENAME = Path(__file__).parent.parent / 'data/reference.pickle'
+
+def save_reference(reference):
+    with open(REFERENCE_FILENAME, 'wb') as f:
         pickle.dump(reference, f)
+
+
+def load_references():
+    with open(REFERENCE_FILENAME, 'rb') as f:
+        references = pickle.load(f)
+    return references
+
+
+def build_references():
+    # build the reference
+    filename = Path(__file__).parent.parent / 'data/ref.png'
+    X = parse_file(filename)
+    images = extract_M_images_from_X(X)
+    reference = build_reference_from_images(images=images,
+                                            labels_coord={'bd': (0, 0),
+                                                          '55': (0, 1),
+                                                          '1c': (0, 2),
+                                                          'e9': (2, 0)})
+    save_reference(reference=reference)
 
 
 def find_best_match(im, reference):
@@ -84,43 +111,47 @@ def parse_file(filename):
     X = np.mean(X, axis=2).T
     return X
 
-# plt.imshow(X)
-X = parse_file(r'ref.png')
+
+def extract_M_images_from_X(X):
+    # grid extract
+    nx = 5
+    ny = 5
+    x_start = 347
+    lx = 64
+    y_start = 366
+    ly = 64
+    dx = 30
+    dy = 20
+
+    images = extract_grid_images(nx, ny, x_start, lx, y_start, ly, dx, dy, X)
+    return images
 
 
-# grid extract
-nx = 5
-ny = 5
-x_start = 347
-lx = 64
-y_start = 366
-ly = 64
-dx = 30
-dy = 20
+def extract_T_images_from_X(X):
+    nx = 3
+    ny = 3
 
-images = extract_grid_images(nx, ny, x_start, lx, y_start, ly, dx, dy, X)
+    x_start = 844
+    lx = 42
+    dx = 26
+    y_start = 347
+    ly = 71
+    dy = 19
+    images = extract_grid_images(nx, ny, x_start, lx, y_start, ly, dx, dy, X, plot_debug=False)
+    return images
 
 
-M = parse_image_matrix(images=images,
-                       reference=reference)
+def extract_M_from_X(X, references):
+    images = extract_M_images_from_X(X=X)
+    M = parse_image_matrix(images=images,
+                           reference=references)
+    return M
 
-print(M.T)
-
-# Build target
-nx = 3
-ny = 3
-
-x_start = 844
-lx = 42
-dx = 26
-y_start = 347
-ly = 71
-dy = 19
-images = extract_grid_images(nx, ny, x_start, lx, y_start, ly, dx, dy, X, plot_debug=False)
-
-T = parse_image_matrix(images=images,
-                       reference=reference)
-print(T.T)
+def extract_T_from_X(X, references):
+    images = extract_T_images_from_X(X=X)
+    T = parse_image_matrix(images=images,
+                           reference=references)
+    return T
 
 
 def compute_buffer_length(X):
@@ -128,11 +159,6 @@ def compute_buffer_length(X):
     peaks_idx = np.where(l >= 0.95 * np.max(l))[0]
     n_buffer = int(round((peaks_idx[-1] - peaks_idx[0]) / 45))
     return n_buffer
-
-
-# compute buffer length
-n_buffer = compute_buffer_length(X)
-print(f'n_buffer: {n_buffer}')
 
 
 def is_subsequence(lst1, lst2):
@@ -164,13 +190,7 @@ def is_subsequence(lst1, lst2):
     return True
 
 
-def gain(x: np.array, M: np.array, T: np.array, debug=False) -> float:
-    """Compute gain associated to x.
-    x : [row sel idx, col sel idx, ...]
-    """
-    if len(x) == 0:
-        return 0.
-
+def convert_x_to_symbol(x, M):
     c = 0
     r = x[0]
     v = [M[r, c]]
@@ -183,9 +203,17 @@ def gain(x: np.array, M: np.array, T: np.array, debug=False) -> float:
             r = i
         v.append(M[r, c])
         col_sel = not col_sel
-    # V is the symbol selection associated to x
-    if debug:
-        print(v)
+    return v
+
+
+def gain(x: np.array, M: np.array, T: np.array) -> float:
+    """Compute gain associated to x.
+    x : [row sel idx, col sel idx, ...]
+    """
+    if len(x) == 0:
+        return 0.
+
+    v = convert_x_to_symbol(x=x, M=M)
 
     # compute associated gain
     value = 0
@@ -199,7 +227,8 @@ def gain(x: np.array, M: np.array, T: np.array, debug=False) -> float:
             value += (t_idx+1)
     return value
 
-assert gain([1,2,2, 1, 4, 4], M, T) == 6
+
+# assert gain([1,2,2, 1, 4, 4], M, T) == 6
 
 
 def find_best_path(M, T, n_buffer):
@@ -263,30 +292,36 @@ def find_best_path(M, T, n_buffer):
 
     return x_opt, g
 
-# find optimal trajectory
-x_opt, g = find_best_path(M=M, T=T, n_buffer=n_buffer)
-
-for o, i in zip(cycle('CR'), x_opt):
-    print(f'{o}{i+1}, ')
-
-gain(x=x_opt, M=M, T=T, debug=True)
 
 plt.show()
 
 
-def build_ref():
-    # build the reference
-    filename = 'ref.png'
-    X = parse_file(filename)
-    reference = build_reference(images=images,
-                                labels_coord={'bd': (0, 0),
-                                              '55': (0, 1),
-                                              '1c': (0, 2),
-                                              'e9': (2, 0)})
+def analyze_file(filename):
+    references = load_references()
 
-    save_reference(reference=reference,
-                   ref_name='reference.pickle')
+    X = parse_file(filename)
+    M = extract_M_from_X(X, references=references)
+    logger.info(f'M:\n{M.T}')
+    T = extract_T_from_X(X, references=references)
+    logger.info(f'T:\n{T.T}')
+
+    n_buffer = compute_buffer_length(X)
+    logger.info(f'n_buffer: {n_buffer}')
+
+    # find optimal trajectory
+    x_opt, g = find_best_path(M=M, T=T, n_buffer=n_buffer)
+
+    x_opt_str = ', '.join(f'{o}{i+1}' for o,i in zip(cycle('CR'), x_opt))
+    logger.info(x_opt_str)
+
+    v = convert_x_to_symbol(x=x_opt, M=M)
+    logger.info(f'Symbol selection: {v}')
+    logger.info(f'gain: {g}')
+
+    return x_opt_str, g
 
 
 if __name__ == '__main__':
-    build_ref()
+    # build_references()
+
+    analyze_file('../data/ref.png')
