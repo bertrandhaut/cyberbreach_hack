@@ -1,4 +1,5 @@
 import pytest
+from pytest import approx
 
 import numpy as np
 from pathlib import Path
@@ -27,9 +28,13 @@ def test_gain(M, T):
 
 
 @pytest.mark.parametrize('filename, expected_sol, expected_gain',
-                         [('ref.png', 'C1, R2, C4, R4', 5)])
+                         [
+                             ('ref.png', 'C1, R2, C4, R4', 5),
+                             ('1.png', 'C2, R2', 3),
+                             ('2.png', 'C1, R2, C3', 2),
+                          ])
 def test_analyze_file(filename, expected_sol, expected_gain):
-    full_filename = Path(__file__).parent.parent / 'data' / filename
+    full_filename = Path(__file__).parent / 'data' / filename
     x_opt_str, g = analyze_file(filename=full_filename)
     assert x_opt_str == expected_sol
-    assert g == expected_gain
+    assert g == approx(expected_gain, abs=0.1)

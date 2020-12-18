@@ -1,5 +1,6 @@
 import logging
-logging.basicConfig(level=logging.INFO)
+
+logging.basicConfig(level=logging.DEBUG)
 
 from pathlib import Path
 from itertools import product, cycle
@@ -33,7 +34,7 @@ def extract_grid_images(nx, ny, x_start, lx, y_start, ly, dx, dy, X, plot_debug=
 
 
 def build_reference_from_images(images, labels_coord):
-    reference = {l: images[i,j] for l, (i, j) in labels_coord.items()}
+    reference = {l: images[i, j] for l, (i, j) in labels_coord.items()}
     # normalize
     for v in reference.values():
         v -= np.mean(v)
@@ -42,6 +43,7 @@ def build_reference_from_images(images, labels_coord):
 
 
 REFERENCE_FILENAME = Path(__file__).parent.parent / 'data/reference.pickle'
+
 
 def save_reference(reference):
     with open(REFERENCE_FILENAME, 'wb') as f:
@@ -86,7 +88,9 @@ def find_best_match(im, reference):
             best_corr = corr
             best_label = k
     norm_corr = best_corr / (ref_size[0] * ref_size[1])
-    if norm_corr > 0.15:
+
+    logger.debug(f'Found {best_label} with a best correlation of {norm_corr}')
+    if norm_corr > 0.2:
         return best_label
     else:
         return None
@@ -147,10 +151,14 @@ def extract_M_from_X(X, references):
                            reference=references)
     return M
 
+
 def extract_T_from_X(X, references):
     images = extract_T_images_from_X(X=X)
     T = parse_image_matrix(images=images,
                            reference=references)
+    # a column of full None --> is not a real line
+    to_drop = np.all(T == None, axis=0)
+    T = T[:, ~to_drop]
     return T
 
 
@@ -174,7 +182,7 @@ def is_subsequence(lst1, lst2):
     # https://codereview.stackexchange.com/questions/215324/find-if-one-list-is-a-subsequence-of-another
 
     l1, l2 = len(lst1), len(lst2)
-    if l1 > l2:  #`l1` must be <= `l2` for `lst1` to be a subsequence of `lst2`.
+    if l1 > l2:  # `l1` must be <= `l2` for `lst1` to be a subsequence of `lst2`.
         return False
     i = j = 0
     d1, d2 = l1, l2
@@ -182,9 +190,9 @@ def is_subsequence(lst1, lst2):
         while lst1[i] != lst2[j]:
             j += 1
             d2 -= 1
-            if d1 > d2:  #At this point, `lst1` cannot a subsequence of `lst2`.
+            if d1 > d2:  # At this point, `lst1` cannot a subsequence of `lst2`.
                 return False
-        i, j, d1, d2 = i+1, j+1, d1-1, d2-1
+        i, j, d1, d2 = i + 1, j + 1, d1 - 1, d2 - 1
         if d1 > d2:
             return False
     return True
@@ -224,8 +232,8 @@ def gain(x: np.array, M: np.array, T: np.array) -> float:
         match = is_subsequence(t, v)
 
         if match:
-            value += (t_idx+1)
-    return value
+            value += (t_idx + 1)
+    return value - len(x) * 0.001
 
 
 # assert gain([1,2,2, 1, 4, 4], M, T) == 6
@@ -248,7 +256,7 @@ def find_best_path(M, T, n_buffer):
 
     # first implementation, brute force approach
     av_rows = set(range(M.shape[0]))  # available choice among rows indexes
-    av_cols = set(range(M.shape[1]))
+    av_cols = set(range(M.shape[1])) - {0}  # first column already selected
 
     x = []  # solution found so far
     g = 0  # total gain
@@ -257,17 +265,17 @@ def find_best_path(M, T, n_buffer):
         """Find the best sol starting from x and potentially n additional tokens chosen form av_rows, av_cols
 
         """
+        actual_gain = gain(x=x, M=M, T=T)
         if n == 0:
-            g = gain(x=x, M=M, T=T)
-            return g, x
+            return actual_gain, x
 
         if len(x) % 2 == 0:  # select row index
             av_indexes = av_rows
         else:
             av_indexes = av_cols
 
-        g_best = 0
-        x_best = None
+        g_best = actual_gain
+        x_best = x
         for idx in av_indexes:  # try select
             if len(x) % 2 == 0:
                 av_rows = av_rows.copy()
@@ -281,7 +289,7 @@ def find_best_path(M, T, n_buffer):
             g_cand, x_cand = best_sol(x=x_cand,
                                       av_rows=av_rows,
                                       av_cols=av_cols,
-                                      n=n-1)
+                                      n=n - 1)
             if g_cand > g_best:
                 g_best = g_cand
                 x_best = x_cand
@@ -291,9 +299,6 @@ def find_best_path(M, T, n_buffer):
     g, x_opt = best_sol(x, av_rows=av_rows, av_cols=av_cols, n=n_buffer)
 
     return x_opt, g
-
-
-plt.show()
 
 
 def analyze_file(filename):
@@ -311,7 +316,7 @@ def analyze_file(filename):
     # find optimal trajectory
     x_opt, g = find_best_path(M=M, T=T, n_buffer=n_buffer)
 
-    x_opt_str = ', '.join(f'{o}{i+1}' for o,i in zip(cycle('CR'), x_opt))
+    x_opt_str = ', '.join(f'{o}{i + 1}' for o, i in zip(cycle('CR'), x_opt))
     logger.info(x_opt_str)
 
     v = convert_x_to_symbol(x=x_opt, M=M)
@@ -324,4 +329,7 @@ def analyze_file(filename):
 if __name__ == '__main__':
     # build_references()
 
-    analyze_file('../data/ref.png')
+    # analyze_file('../data/ref.png')
+    analyze_file('../tests/data/2.png')
+
+    plt.show()
