@@ -145,21 +145,28 @@ def extract_T_images_from_X(X):
     :param X:
     :return:
     """
-    only_one = X[1170, 436] > 30
+    # all character not always aligned at same starting y
+    start_white = np.where(np.max(X[850:864, 340:368], axis=0) > 50)[0][0]
+    if start_white < 10:
+        position = 2
+    else:
+        position = 1
 
     x_start = 844
     lx = 42
     dx = 26
     ly = 71
     dy = 19
-    if only_one:
+    if position == 1:
         nx = 3  #TODO managed correclty nx/ny
         ny = 3
         y_start = 361
-    else:
+    elif position == 2:
         nx = 3
         ny = 3
         y_start = 347
+    else:
+        assert False
     images = extract_grid_images(nx, ny, x_start, lx, y_start, ly, dx, dy, X)
 
     # plot_images(images)
@@ -353,6 +360,6 @@ if __name__ == '__main__':
     # build_references()
 
     # analyze_file('../data/ref.png')
-    analyze_file('../tests/data/3.png')
+    analyze_file('../tests/data/4.png')
 
     plt.show()

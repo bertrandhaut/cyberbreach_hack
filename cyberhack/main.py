@@ -13,6 +13,7 @@ from cyberhack.hack import analyze_file
 
 logger = logging.getLogger(__name__)
 
+
 class MyHandler(FileSystemEventHandler):
     def on_created(self, event):
         time.sleep(2)  # wait for the file to be completely written
@@ -23,6 +24,7 @@ class MyHandler(FileSystemEventHandler):
 
 
 if __name__ == "__main__":
+    logger.info('Cyberhack hack started.')
     path = r'C:\data\tmp\a\Cyberpunk 2077'
     my_event_handler = MyHandler()
 
