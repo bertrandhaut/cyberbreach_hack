@@ -13,7 +13,20 @@ from PIL import Image
 logger = logging.getLogger(__name__)
 
 
-def extract_grid_images(nx, ny, x_start, lx, y_start, ly, dx, dy, X, plot_debug=False):
+def plot_images(images):
+    nx = images.shape[0]
+    ny = images.shape[1]
+
+    fig, axes = plt.subplots(nx, ny)
+    for i, j in product(range(nx), range(ny)):
+        if nx == 1 or ny == 1:
+            ax = axes[j]
+        else:
+            ax = axes[i, j]
+        ax.imshow(images[i, j].T)
+
+
+def extract_grid_images(nx, ny, x_start, lx, y_start, ly, dx, dy, X):
     coords = np.empty((nx, ny), dtype=object)
     for i, j in np.ndindex(coords.shape):
         coords[i, j] = (x_start + i * lx, y_start + j * ly)
@@ -23,12 +36,6 @@ def extract_grid_images(nx, ny, x_start, lx, y_start, ly, dx, dy, X, plot_debug=
     for i, j in np.ndindex(coords.shape):
         x, y = coords[i, j]
         images[i, j] = X[x:x + dx, y:y + dy]
-
-    # show all images
-    if plot_debug:
-        fig, axes = plt.subplots(nx, ny)
-        for i, j in product(range(ny), range(ny)):
-            axes[i, j].imshow(images[i, j].T)
 
     return images
 
@@ -132,16 +139,30 @@ def extract_M_images_from_X(X):
 
 
 def extract_T_images_from_X(X):
-    nx = 3
-    ny = 3
+    """
+    T position are different for 1 target and "2 or more" targets
+
+    :param X:
+    :return:
+    """
+    only_one = X[1170, 436] > 30
 
     x_start = 844
     lx = 42
     dx = 26
-    y_start = 347
     ly = 71
     dy = 19
-    images = extract_grid_images(nx, ny, x_start, lx, y_start, ly, dx, dy, X, plot_debug=False)
+    if only_one:
+        nx = 3  #TODO managed correclty nx/ny
+        ny = 3
+        y_start = 361
+    else:
+        nx = 3
+        ny = 3
+        y_start = 347
+    images = extract_grid_images(nx, ny, x_start, lx, y_start, ly, dx, dy, X)
+
+    # plot_images(images)
     return images
 
 
@@ -159,6 +180,8 @@ def extract_T_from_X(X, references):
     # a column of full None --> is not a real line
     to_drop = np.all(T == None, axis=0)
     T = T[:, ~to_drop]
+    assert T.shape[1] > 0  # at least 1 target
+
     return T
 
 
@@ -330,6 +353,6 @@ if __name__ == '__main__':
     # build_references()
 
     # analyze_file('../data/ref.png')
-    analyze_file('../tests/data/2.png')
+    analyze_file('../tests/data/3.png')
 
     plt.show()
