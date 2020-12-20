@@ -199,7 +199,14 @@ def compute_buffer_length(X):
     return n_buffer
 
 
-def is_subsequence(lst1, lst2):
+def is_consecutive_subsequence(lst1, lst2):
+    for i in range(0, len(lst2)-len(lst1)+1):
+        if lst1 == lst2[i:i+len(lst1)]:
+            return True
+    return False
+
+
+def is_non_consecutive_subsequence(lst1, lst2):
     """
         *   Finds if a list is a subsequence of another.
 
@@ -259,7 +266,7 @@ def gain(x: np.array, M: np.array, T: np.array) -> float:
         t = [tt for tt in t if tt is not None]  # filter None
 
         # check if t is a subsequence of v
-        match = is_subsequence(t, v)
+        match = is_consecutive_subsequence(t, v)
 
         if match:
             value += (t_idx + 1)
@@ -343,6 +350,7 @@ def analyze_file(filename):
     n_buffer = compute_buffer_length(X)
     logger.info(f'n_buffer: {n_buffer}')
 
+    print(gain(x=[1,1,2], M=M, T=T))
     # find optimal trajectory
     x_opt, g = find_best_path(M=M, T=T, n_buffer=n_buffer)
 
@@ -360,6 +368,6 @@ if __name__ == '__main__':
     # build_references()
 
     # analyze_file('../data/ref.png')
-    analyze_file('../tests/data/4.png')
+    analyze_file('../tests/data/2.png')
 
     plt.show()

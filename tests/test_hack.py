@@ -4,7 +4,7 @@ from pytest import approx
 import numpy as np
 from pathlib import Path
 
-from cyberhack.hack import gain, analyze_file
+from cyberhack.hack import gain, analyze_file, is_consecutive_subsequence
 
 
 @pytest.fixture
@@ -24,14 +24,14 @@ def T():
 
 
 def test_gain(M, T):
-    assert gain([1, 2, 2, 1, 4, 4], M, T) == 6
+    assert gain([1, 2, 2, 1, 4, 4], M, T) == approx(6, abs=0.1)
 
 
 @pytest.mark.parametrize('filename, expected_sol, expected_gain',
                          [
-                             ('ref.png', 'C1, R2, C4, R4', 5),
+                             ('ref.png', 'C3, R2, C4, R4', 5),
                              ('1.png', 'C2, R2', 3),
-                             ('2.png', 'C1, R2, C3', 2),
+                             ('2.png', 'C2, R2, C3', 2),
                              ('3.png', 'C2, R2, C3, R3', 1),
                              ('4.png', 'C1, R3', 1),
                           ])
@@ -40,3 +40,15 @@ def test_analyze_file(filename, expected_sol, expected_gain):
     x_opt_str, g = analyze_file(filename=full_filename)
     assert x_opt_str == expected_sol
     assert g == approx(expected_gain, abs=0.1)
+
+
+@pytest.mark.parametrize('l1, l2, expected_results',
+                         [
+                             (['a', 'b'], ['a', 'b'], True),
+                             (['a', 'b'], ['a', 'b', 'c'], True),
+                             (['a', 'b'], ['c', 'a', 'b'], True),
+                             (['a', 'b'], ['a', 'c', 'b'], False),
+                             (['a', 'b'], ['a'], False),
+                          ])
+def test_is_consecutive_subsequence(l1, l2, expected_results):
+    assert is_consecutive_subsequence(l1, l2) == expected_results
