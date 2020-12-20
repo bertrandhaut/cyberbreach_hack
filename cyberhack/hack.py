@@ -69,10 +69,16 @@ def build_references():
     X = parse_file(filename)
     images = extract_M_images_from_X(X)
     reference = build_reference_from_images(images=images,
-                                            labels_coord={'bd': (0, 0),
-                                                          '55': (0, 1),
-                                                          '1c': (0, 2),
-                                                          'e9': (2, 0)})
+                                            # labels_coord={'bd': (0, 0),
+                                            #               '55': (0, 1),
+                                            #               '1c': (0, 2),
+                                            #               'e9': (2, 0)}
+                                            labels_coord={'55': (0, 0),
+                                                          '1c': (0, 1),
+                                                          'bd': (0, 4),
+                                                          'e9': (1, 0),
+                                                          '7a': (2,2)}
+                                            )
     save_reference(reference=reference)
 
 
@@ -124,12 +130,21 @@ def parse_file(filename):
 
 
 def extract_M_images_from_X(X):
+    M_size = detect_M_size(X)
+
     # grid extract
-    nx = 5
-    ny = 5
-    x_start = 347
-    lx = 64
+    if M_size == 5:
+        nx = 5
+        ny = 5
+        x_start = 347
+    elif M_size == 6:
+        x_start = 315
+        nx = 6
+        ny = 6
+    else:
+        raise ValueError('Unknown M size')
     y_start = 366
+    lx = 64
     ly = 64
     dx = 30
     dy = 20
@@ -138,13 +153,14 @@ def extract_M_images_from_X(X):
     return images
 
 
-def extract_T_images_from_X(X):
+def extract_T_images_from_X(X, M_size=5):
     """
     T position are different for 1 target and "2 or more" targets
 
     :param X:
     :return:
     """
+
     # all character not always aligned at same starting y
     start_white = np.where(np.max(X[850:864, 340:368], axis=0) > 50)[0][0]
     if start_white < 10:
@@ -152,7 +168,10 @@ def extract_T_images_from_X(X):
     else:
         position = 1
 
-    x_start = 844
+    if M_size == 5:
+        x_start = 844
+    else:
+        x_start = 875
     lx = 42
     dx = 26
     ly = 71
@@ -167,21 +186,27 @@ def extract_T_images_from_X(X):
         y_start = 347
     else:
         assert False
+
+
     images = extract_grid_images(nx, ny, x_start, lx, y_start, ly, dx, dy, X)
 
     # plot_images(images)
     return images
 
 
-def extract_M_from_X(X, references):
+def extract_M_from_X(X, references, plot_debug=False):
     images = extract_M_images_from_X(X=X)
+    if plot_debug:
+        plot_images(images)
     M = parse_image_matrix(images=images,
                            reference=references)
     return M
 
 
-def extract_T_from_X(X, references):
-    images = extract_T_images_from_X(X=X)
+def extract_T_from_X(X, references, plot_debug=False, M_size=5):
+    images = extract_T_images_from_X(X=X, M_size=M_size)
+    if plot_debug:
+        plot_images(images)
     T = parse_image_matrix(images=images,
                            reference=references)
     # a column of full None --> is not a real line
@@ -190,6 +215,17 @@ def extract_T_from_X(X, references):
     assert T.shape[1] > 0  # at least 1 target
 
     return T
+
+
+def detect_M_size(X):
+    l = X[730:1000, 600]
+    peaks_idx = np.where(l >= 0.95 * np.max(l))[0]
+    if peaks_idx == 44:
+        return 5
+    elif peaks_idx == 76:
+        return 6
+    else:
+        return Exception("Don't knwow")
 
 
 def compute_buffer_length(X):
@@ -338,19 +374,19 @@ def find_best_path(M, T, n_buffer):
     return x_opt, g
 
 
-def analyze_file(filename):
+def analyze_file(filename, plot_debug=False):
     references = load_references()
 
     X = parse_file(filename)
-    M = extract_M_from_X(X, references=references)
+    M = extract_M_from_X(X, references=references, plot_debug=plot_debug)
     logger.info(f'M:\n{M.T}')
-    T = extract_T_from_X(X, references=references)
+    T = extract_T_from_X(X, references=references, plot_debug=plot_debug, M_size=M.shape[1])
     logger.info(f'T:\n{T.T}')
 
     n_buffer = compute_buffer_length(X)
     logger.info(f'n_buffer: {n_buffer}')
 
-    print(gain(x=[1,1,2], M=M, T=T))
+    # print(gain(x=[1,1,2], M=M, T=T))
     # find optimal trajectory
     x_opt, g = find_best_path(M=M, T=T, n_buffer=n_buffer)
 
@@ -365,9 +401,9 @@ def analyze_file(filename):
 
 
 if __name__ == '__main__':
-    # build_references()
+    build_references()
 
     # analyze_file('../data/ref.png')
-    analyze_file('../tests/data/2.png')
+    analyze_file('../tests/data/ref.png', plot_debug=True)
 
     plt.show()
