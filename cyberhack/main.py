@@ -1,13 +1,11 @@
 import logging
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - %(message)s',
-                    datefmt='%Y-%m-%d %H:%M:%S')
 
 import time
 
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
+from cyberhack.config import configure_logger
 from cyberhack.hack import analyze_file
 
 
@@ -24,6 +22,7 @@ class MyHandler(FileSystemEventHandler):
 
 
 if __name__ == "__main__":
+    configure_logger()
     logger.info('Cyberhack hack started.')
     path = r'C:\data\tmp\a\Cyberpunk 2077'
     my_event_handler = MyHandler()

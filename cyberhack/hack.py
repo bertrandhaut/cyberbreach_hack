@@ -1,11 +1,10 @@
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
-
 from pathlib import Path
 from itertools import product, cycle
 import pickle
 
+from scipy.signal import correlate2d
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
@@ -82,6 +81,10 @@ def build_references():
     save_reference(reference=reference)
 
 
+def correlation(im1, im2):
+    return np.max(correlate2d(im1, im2))
+
+
 def find_best_match(im, reference):
     im -= np.mean(im)
     im /= np.std(im)
@@ -96,14 +99,14 @@ def find_best_match(im, reference):
 
     best_label, best_corr = None, -float('inf')
     for k, v in reference.items():
-        corr = np.sum(im * v)
+        corr = correlation(im, v)
         if corr > best_corr:
             best_corr = corr
             best_label = k
     norm_corr = best_corr / (ref_size[0] * ref_size[1])
 
     logger.debug(f'Found {best_label} with a best correlation of {norm_corr}')
-    if norm_corr > 0.2:
+    if norm_corr > 0.3:
         return best_label
     else:
         return None
@@ -401,9 +404,14 @@ def analyze_file(filename, plot_debug=False):
 
 
 if __name__ == '__main__':
-    build_references()
+    from cyberhack.config import configure_logger
+    configure_logger()
+
+    # build_references()
+
+
 
     # analyze_file('../data/ref.png')
-    analyze_file('../tests/data/ref.png', plot_debug=True)
+    analyze_file('../tests/data/3.png', plot_debug=True)
 
     plt.show()
