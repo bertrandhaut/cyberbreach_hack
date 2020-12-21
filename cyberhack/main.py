@@ -18,7 +18,10 @@ class MyHandler(FileSystemEventHandler):
         file_path = event.src_path
 
         logger.info(f'Starting analysis of {file_path}')
-        analyze_file(file_path)
+        try:
+            analyze_file(file_path)
+        except Exception as e:
+            logger.exception(f'Error dealing with {file_path}')
 
 
 if __name__ == "__main__":

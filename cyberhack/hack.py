@@ -386,7 +386,7 @@ def analyze_file(filename, plot_debug=False):
     T = extract_T_from_X(X, references=references, plot_debug=plot_debug, M_size=M.shape[1])
     logger.info(f'T:\n{T.T}')
 
-    n_buffer = compute_buffer_length(X)
+    n_buffer = min(compute_buffer_length(X), M.shape[0])
     logger.info(f'n_buffer: {n_buffer}')
 
     # print(gain(x=[1,1,2], M=M, T=T))
@@ -412,6 +412,7 @@ if __name__ == '__main__':
 
 
     # analyze_file('../data/ref.png')
-    analyze_file('../tests/data/3.png', plot_debug=True)
+    # analyze_file(r'C:\data\tmp\a\Cyberpunk 2077\Cyberpunk 2077 Screenshot 2020.12.21 - 12.35.30.27.png', plot_debug=False)
+    analyze_file('../tests/data/6.png', plot_debug=True)
 
     plt.show()

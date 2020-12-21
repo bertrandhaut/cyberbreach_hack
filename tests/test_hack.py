@@ -35,6 +35,7 @@ def test_gain(M, T):
                              ('3.png', 'C2, R2, C3, R3', 1),
                              ('4.png', 'C1, R3', 1),
                              ('5.png', 'C4, R2, C6, R3', 6),
+                             ('6.png', 'C1, R3, C2, R5, C3', 3),
                           ])
 def test_analyze_file(filename, expected_sol, expected_gain):
     full_filename = Path(__file__).parent / 'data' / filename
