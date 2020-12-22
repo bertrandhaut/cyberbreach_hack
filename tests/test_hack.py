@@ -29,22 +29,21 @@ def test_gain(M, T):
 
 @pytest.mark.parametrize('filename, expected_sol, expected_gain',
                          [
-                             ('ref.png', 'C3, R2, C4, R4', 5),
-                             ('1.png', 'C2, R2', 3),
-                             ('2.png', 'C2, R2, C3', 2),
-                             ('3.png', 'C2, R2, C3, R3', 1),
+                             ('ref.png', 'C1, R5, C3, R1', 13),
+                             ('1.png', 'C2, R2', 5),
+                             ('2.png', 'C2, R5, C5, R1', 5),
+                             ('3.png', 'C1, R5, C3, R1', 1),
                              ('4.png', 'C1, R3', 1),
-                             ('5.png', 'C4, R2, C6, R3', 6),
-                             ('6.png', 'C1, R3, C2, R5, C3', 3),
+                             ('5.png', 'C4, R2, C1, R1', 14),
+                             ('6.png', 'C1, R3, C2, R5, C1', 5),
+                             ('8.png', 'C2, R3, C4, R2, C1, R5, C4', 25),
                           ])
 def test_analyze_file(filename, expected_sol, expected_gain):
     full_filename = Path(__file__).parent / 'data' / filename
     x_opt_str, g = analyze_file(filename=full_filename)
-    assert g >= approx(expected_gain, abs=0.1)
-    # assert x_opt_str == expected_sol
 
-    # assert g == approx(expected_gain, abs=0.1)
-    # assert x_opt_str == expected_sol
+    assert g == approx(expected_gain, abs=0.1)
+    assert x_opt_str == expected_sol
 
 
 @pytest.mark.parametrize('l1, l2, expected_results',

@@ -62,23 +62,31 @@ def load_references():
     return references
 
 
-def build_references():
-    # build the reference
-    filename = Path(__file__).parent.parent / 'data/ref.png'
+def _build_references_from_file_and_labels(filename, labels_coord):
     X = parse_file(filename)
     images = extract_M_images_from_X(X)
     reference = build_reference_from_images(images=images,
-                                            # labels_coord={'bd': (0, 0),
-                                            #               '55': (0, 1),
-                                            #               '1c': (0, 2),
-                                            #               'e9': (2, 0)}
-                                            labels_coord={'55': (0, 0),
-                                                          '1c': (0, 1),
-                                                          'bd': (0, 4),
-                                                          'e9': (1, 0),
-                                                          '7a': (2,2)}
-                                            )
-    save_reference(reference=reference)
+                                            labels_coord=labels_coord)
+    return reference
+
+
+def build_references():
+    # build the reference
+    filename = Path(__file__).parent.parent / 'data/ref.png'
+    labels_coord = {'55': (0, 0),
+                    '1c': (0, 1),
+                    'bd': (0, 4),
+                    'e9': (1, 0),
+                    '7a': (2, 2)}
+    references_1 = _build_references_from_file_and_labels(filename=filename, labels_coord=labels_coord)
+
+    filename = Path(__file__).parent.parent / 'data/ref2.png'
+    labels_coord = {'FF': (4, 4)}
+    references_2 = _build_references_from_file_and_labels(filename=filename, labels_coord=labels_coord)
+
+    references_1.update(references_2)
+
+    save_reference(reference=references_1)
 
 
 def correlation(im1, im2):
@@ -180,12 +188,12 @@ def extract_T_images_from_X(X, M_size=5):
     ly = 71
     dy = 19
     if position == 1:
-        nx = 3  #TODO managed correclty nx/ny
-        ny = 3
+        nx = 4  #TODO managed correclty nx/ny
+        ny = 4
         y_start = 361
     elif position == 2:
-        nx = 3
-        ny = 3
+        nx = 4
+        ny = 4
         y_start = 347
     else:
         assert False
@@ -320,11 +328,33 @@ def gain(x: np.array, M: np.array, T: np.array) -> float:
         match = is_consecutive_subsequence(t, v)
 
         if match:
-            value += (t_idx + 1)
+            value += (t_idx + 1)**2
     return value - len(x) * 0.001
 
 
 # assert gain([1,2,2, 1, 4, 4], M, T) == 6
+
+
+def available_move(x, n):
+    # construct matrix of already played position
+    played = np.zeros((n, n), dtype=bool)
+    prev = 0
+    col_sel = True
+    for i in x:
+        if col_sel:
+            played[prev, i] = True
+        else:
+            played[i, prev] = True
+        prev = i
+        col_sel = not col_sel
+
+    # next selection will be of type col_sel
+    last_move = 0 if len(x) == 0 else x[-1]
+    if col_sel:
+        candidates = np.where(~ played[last_move, :])[0]
+    else:
+        candidates = np.where(~ played[:, last_move])[0]
+    return candidates
 
 
 def find_best_path(M, T, n_buffer):
@@ -343,13 +373,11 @@ def find_best_path(M, T, n_buffer):
     """
 
     # first implementation, brute force approach
-    av_rows = set(range(M.shape[0]))  # available choice among rows indexes
-    av_cols = set(range(M.shape[1]))  # first column already selected
 
-    x = []  # solution found so far
+    x = []  # solution found so far col index, row index, col index,...
     g = 0  # total gain
 
-    def best_sol(x, av_rows, av_cols, n):
+    def best_sol(x, n):
         """Find the best sol starting from x and potentially n additional tokens chosen form av_rows, av_cols
 
         """
@@ -357,26 +385,15 @@ def find_best_path(M, T, n_buffer):
         if n == 0:
             return actual_gain, x
 
-        if len(x) % 2 == 0:  # select row index
-            av_indexes = av_rows
-        else:
-            av_indexes = av_cols
+        candidates = available_move(x, n=M.shape[0])
 
         g_best = actual_gain
         x_best = x
-        for idx in av_indexes:  # try select
-            if len(x) % 2 == 0:
-                av_rows = av_rows.copy()
-                av_rows.remove(idx)
-            else:
-                av_cols = av_cols.copy()
-                av_cols.remove(idx)
+        for idx in candidates:  # try select
 
             x_cand = x.copy()
             x_cand.append(idx)
             g_cand, x_cand = best_sol(x=x_cand,
-                                      av_rows=av_rows,
-                                      av_cols=av_cols,
                                       n=n - 1)
             if g_cand > g_best:
                 g_best = g_cand
@@ -384,7 +401,7 @@ def find_best_path(M, T, n_buffer):
 
         return g_best, x_best
 
-    g, x_opt = best_sol(x, av_rows=av_rows, av_cols=av_cols, n=n_buffer)
+    g, x_opt = best_sol(x, n=n_buffer)
 
     return x_opt, g
 
