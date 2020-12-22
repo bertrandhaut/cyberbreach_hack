@@ -221,8 +221,8 @@ def extract_T_from_X(X, references, plot_debug=False, M_size=5):
 
 
 def detect_M_size(X):
-    l = X[730:1000, 600]
-    peaks_idx = np.where(l >= 0.95 * np.max(l))[0]
+    l = X[730:1300, 600]
+    peaks_idx = np.where(l >= 0.95 * np.max(l))[0][0]
     if peaks_idx == 44:
         return 5
     elif peaks_idx == 76:
@@ -232,9 +232,21 @@ def detect_M_size(X):
 
 
 def compute_buffer_length(X):
+    # l = X[823:1270, 212]
+
+    # square_size = 31
+    # space_size = 11
+    #
+    # peaks_idx = np.where((l >= 50) & (l <=100))[0]
+    # total_length = peaks_idx[-1] - peaks_idx[0]
+    # # n_buffer * square_size + (n_buffer -1) * space_size == total_length
+    #
+    # n_buffer = int(round((total_length + space_size)/(square_size+space_size)))
+
     l = X[810:1270, 212]
     peaks_idx = np.where(l >= 0.95 * np.max(l))[0]
     n_buffer = int(round((peaks_idx[-1] - peaks_idx[0]) / 45))
+
     return n_buffer
 
 
@@ -332,7 +344,7 @@ def find_best_path(M, T, n_buffer):
 
     # first implementation, brute force approach
     av_rows = set(range(M.shape[0]))  # available choice among rows indexes
-    av_cols = set(range(M.shape[1])) - {0}  # first column already selected
+    av_cols = set(range(M.shape[1]))  # first column already selected
 
     x = []  # solution found so far
     g = 0  # total gain
@@ -386,7 +398,7 @@ def analyze_file(filename, plot_debug=False):
     T = extract_T_from_X(X, references=references, plot_debug=plot_debug, M_size=M.shape[1])
     logger.info(f'T:\n{T.T}')
 
-    n_buffer = min(compute_buffer_length(X), M.shape[0])
+    n_buffer = compute_buffer_length(X)
     logger.info(f'n_buffer: {n_buffer}')
 
     # print(gain(x=[1,1,2], M=M, T=T))
@@ -412,7 +424,7 @@ if __name__ == '__main__':
 
 
     # analyze_file('../data/ref.png')
-    # analyze_file(r'C:\data\tmp\a\Cyberpunk 2077\Cyberpunk 2077 Screenshot 2020.12.21 - 12.35.30.27.png', plot_debug=False)
-    analyze_file('../tests/data/6.png', plot_debug=True)
+    # analyze_file(r'C:\data\tmp\a\Cyberpunk 2077\Cyberpunk 2077 Screenshot 2020.12.21 - 18.30.55.07.png', plot_debug=False)
+    analyze_file('../tests/data/8.png', plot_debug=True)
 
     plt.show()
