@@ -145,15 +145,15 @@ def extract_M_images_from_X(X):
 
     # grid extract
     if M_size == 5:
-        nx = 5
-        ny = 5
         x_start = 347
     elif M_size == 6:
         x_start = 315
-        nx = 6
-        ny = 6
+    elif M_size == 7:
+        x_start = 283
     else:
         raise ValueError('Unknown M size')
+    nx = M_size
+    ny = M_size
     y_start = 366
     lx = 64
     ly = 64
@@ -172,11 +172,12 @@ def extract_T_images_from_X(X, M_size=5):
     :return:
     """
 
-
     if M_size == 5:
         x_start = 844
-    else:
+    elif M_size == 6:
         x_start = 875
+    elif M_size == 7:
+        x_start = 907
     lx = 42
     dx = 26
     ly = 71
@@ -227,6 +228,8 @@ def detect_M_size(X):
         return 5
     elif peaks_idx == 76:
         return 6
+    elif peaks_idx == 108:
+        return 7
     else:
         return Exception("Don't knwow")
 
@@ -420,6 +423,7 @@ def analyze_file(filename, plot_debug=False):
     v = convert_x_to_symbol(x=x_opt, M=M)
     logger.info(f'Symbol selection: {v}')
     logger.info(f'gain: {g}')
+    logger.info(f'Solution: {np.array(x_opt)+1}')
 
     return x_opt_str, g
 
@@ -434,6 +438,6 @@ if __name__ == '__main__':
 
     # analyze_file('../data/ref.png')
     # analyze_file(r'C:\data\tmp\a\Cyberpunk 2077\Cyberpunk 2077 Screenshot 2020.12.21 - 18.30.55.07.png', plot_debug=False)
-    analyze_file('../tests/data/9.png', plot_debug=True)
+    analyze_file('../tests/data/10.png', plot_debug=True)
 
     plt.show()

@@ -24,7 +24,7 @@ def T():
 
 
 def test_gain(M, T):
-    assert gain([1, 2, 2, 1, 4, 4], M, T) == approx(6, abs=0.1)
+    assert gain([1, 2, 2, 1, 4, 4], M, T) == approx(14, abs=0.1)
 
 
 @pytest.mark.parametrize('filename, expected_sol, expected_gain',
@@ -38,6 +38,7 @@ def test_gain(M, T):
                              ('6.png', 'C1, R3, C2, R5, C1', 5),
                              ('8.png', 'C2, R3, C4, R2, C1, R5, C4', 25),
                              ('9.png', 'C1, R2, C3, R6, C5, R1, C4', 5),
+                             ('10.png', 'C4, R2, C5, R6, C1, R3', 10),
                           ])
 def test_analyze_file(filename, expected_sol, expected_gain):
     full_filename = Path(__file__).parent / 'data' / filename
