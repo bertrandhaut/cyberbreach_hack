@@ -172,12 +172,6 @@ def extract_T_images_from_X(X, M_size=5):
     :return:
     """
 
-    # all character not always aligned at same starting y
-    start_white = np.where(np.max(X[850:864, 340:368], axis=0) > 50)[0][0]
-    if start_white < 10:
-        position = 2
-    else:
-        position = 1
 
     if M_size == 5:
         x_start = 844
@@ -187,17 +181,15 @@ def extract_T_images_from_X(X, M_size=5):
     dx = 26
     ly = 71
     dy = 19
-    if position == 1:
-        nx = 4  #TODO managed correclty nx/ny
-        ny = 4
-        y_start = 361
-    elif position == 2:
-        nx = 4
-        ny = 4
+    nx = 4
+    ny = 4
+
+    # all character not always aligned at same starting y
+    start_white = np.where(np.max(X[x_start:x_start+dx, 340:368], axis=0) > 50)[0][0]
+    if start_white < 10:
         y_start = 347
     else:
-        assert False
-
+        y_start = 361
 
     images = extract_grid_images(nx, ny, x_start, lx, y_start, ly, dx, dy, X)
 
@@ -442,6 +434,6 @@ if __name__ == '__main__':
 
     # analyze_file('../data/ref.png')
     # analyze_file(r'C:\data\tmp\a\Cyberpunk 2077\Cyberpunk 2077 Screenshot 2020.12.21 - 18.30.55.07.png', plot_debug=False)
-    analyze_file('../tests/data/8.png', plot_debug=True)
+    analyze_file('../tests/data/9.png', plot_debug=True)
 
     plt.show()
