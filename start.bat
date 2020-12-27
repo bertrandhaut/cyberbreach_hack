@@ -1,3 +1,3 @@
-CALL conda activate cyber_hack
+CALL conda activate cyberbreach
 set PYTHONPATH=.
-python cyberhack\main.py
+python cyberbreach\main.py
