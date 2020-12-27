@@ -429,15 +429,11 @@ def analyze_file(filename, plot_debug=False):
 
 
 if __name__ == '__main__':
-    from cyberhack.config import configure_logger
+    from cyberbreach.config import configure_logger
     configure_logger()
 
     # build_references()
 
-
-
-    # analyze_file('../data/ref.png')
-    # analyze_file(r'C:\data\tmp\a\Cyberpunk 2077\Cyberpunk 2077 Screenshot 2020.12.21 - 18.30.55.07.png', plot_debug=False)
     analyze_file('../tests/data/10.png', plot_debug=True)
 
     plt.show()

@@ -5,8 +5,8 @@ import time
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-from cyberhack.config import configure_logger
-from cyberhack.hack import analyze_file
+from cyberbreach.config import configure_logger
+from cyberbreach.hack import analyze_file
 
 
 logger = logging.getLogger(__name__)

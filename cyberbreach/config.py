@@ -25,7 +25,7 @@ def configure_logger():
                 'level': 'WARNING',
                 'propagate': False
             },
-            'cyberhack.hack': {
+            'cyberbreach.hack': {
                 'handlers': ['default'],
                 'level': 'DEBUG',
                 'propagate': False
