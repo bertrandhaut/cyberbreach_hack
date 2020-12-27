@@ -1,0 +1,9 @@
+name: cyberbreach
+dependencies:
+- python>=3.7
+- scipy
+- matplotlib
+- pip
+- pytest
+- pip:
+  - watchdog

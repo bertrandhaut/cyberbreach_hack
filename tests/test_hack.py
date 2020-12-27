@@ -4,7 +4,7 @@ from pytest import approx
 import numpy as np
 from pathlib import Path
 
-from cyberhack.hack import gain, analyze_file, is_consecutive_subsequence
+from cyberbreach.hack import gain, analyze_file, is_consecutive_subsequence
 
 
 @pytest.fixture
